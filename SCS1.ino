@@ -26,23 +26,33 @@ DHT dht(DHT_PIN, DHT_TYPE);
 TinyGPSPlus gps;
 
 SoftwareSerial ss(4, 3);
+SoftwareSerial node(10,9);
+String output = "";
 
 void setup() {
   Serial.begin(9600); //for debugging
   ss.begin(9600);
-  
+  node.begin(115200);
   bme.begin();
   dht.begin();
 }
 
 void loop() {
-  Serial.println("Data from Sensor: BMP280");
-  readBMP280temp();
-  readBMP280pres();
-  Serial.println("Data from Sensor: DHT22");
-  readDHT22temp();
-  readDHT22hum();
+  output = "";
+  
+  //Serial.println("Data from Sensor: BMP280");
+  //readBMP280temp();
+  //readBMP280pres();
+  //Serial.println("Data from Sensor: DHT22");
+  //readDHT22temp();
+  //readDHT22hum();
 
+  output += String(readDHT22temp());
+  output += ' ';
+  output += String(readDHT22hum());
+  output += ' ';
+  output += String(readBMP280pres());
+  
   while (ss.available() > 0)
     if (gps.encode(ss.read())){
       Serial.println("Location:");
@@ -115,6 +125,7 @@ float readDHT22hum(){
   Serial.print(DHT22hum);
   Serial.println();
   
+  return DHT22hum;
 }
 
 float readDHT22temp(){
@@ -129,6 +140,8 @@ float readDHT22temp(){
   Serial.print("/DHT22/ Temperature: ");
   Serial.print(DHT22temp);
   Serial.println();
+  
+  return DHT22temp;
 }
 /*
  * Function that receives GPS location
@@ -204,7 +217,8 @@ int getTimeSecs(){
   int GPSss = 0;
   if (gps.time.isValid()){
     GPSss = gps.time.second();
-    if (GPSss < 10) 
+    if (GPSss < 10)
+      Serial.print(F("0"));
     Serial.print(GPSss);
   }
   else
@@ -215,7 +229,8 @@ int getTimeMins(){
   int GPSmins = 0;
   if (gps.time.isValid()){
     GPSmins = gps.time.minute();
-    if (GPSmins < 10)     
+    if (GPSmins < 10)
+      Serial.print(F("0"));
     Serial.print(GPSmins);
   }
   else
@@ -227,6 +242,7 @@ int getTimeHours(){
   if (gps.time.isValid()){
     GPShh = gps.time.hour();
     if (GPShh < 10)      
+      Serial.print(F("0"));
     Serial.print(GPShh);
   }
   else
