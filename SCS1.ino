@@ -11,47 +11,63 @@
 //for DHT22 Temperature and Humidity Sensor
 #include "DHT.h"
 
-#define   MQ2_PIN     A1
-#define   MQ4_PIN     A2
-#define   MQ5_PIN     6
-#define   MQ6_PIN     A3
-#define   MQ135_PIN   5
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
+#define   MQ5_DPIN    6
+#define   MQ5_APIN    A1
+#define   MQ135_DPIN  7
+#define   MQ135_APIN  A2
 #define   DHT_PIN     2
 #define   DHT_TYPE    DHT22
-
+#define   SOIL_PIN    A3
+#define   ONE_WIRE_BUS 8
 
 Adafruit_BMP280 bme;
 DHT dht(DHT_PIN, DHT_TYPE);
 TinyGPSPlus gps;
 
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
 SoftwareSerial ss(4, 3);
-SoftwareSerial node(10,9);
+SoftwareSerial node(13,12);
 String output = "";
 
 void setup() {
+  pinMode(MQ5_DPIN, INPUT);
+  pinMode(MQ5_APIN, INPUT);
+  pinMode(MQ135_DPIN, INPUT);
+  pinMode(MQ135_APIN, INPUT);
+  
   Serial.begin(9600); //for debugging
   ss.begin(9600);
   node.begin(115200);
   bme.begin();
   dht.begin();
+  sensors.begin();
 }
 
 void loop() {
   output = "";
-  
-  //Serial.println("Data from Sensor: BMP280");
-  //readBMP280temp();
-  //readBMP280pres();
-  //Serial.println("Data from Sensor: DHT22");
-  //readDHT22temp();
-  //readDHT22hum();
 
   output += String(readDHT22temp());
   output += ' ';
   output += String(readDHT22hum());
   output += ' ';
   output += String(readBMP280pres());
+  output += ' ';
+  output += String(getBatteryVoltage());
+  output += ' ';
+  output += String(getMQ5data());
+  output += ' ';
+  output += String(getMQ135data());
+  output += ' ';
+  output += String(getWaterTemp());
+  output += ' ';
+  output += String(getSoilMoisture());
+  node.flush();
+  node.println(output);
   
   while (ss.available() > 0)
     if (gps.encode(ss.read())){
@@ -76,7 +92,8 @@ void loop() {
   if (millis() > 5000 && gps.charsProcessed() < 10) {
     Serial.println(F("No GPS detected: check wiring.")); 
   }
-  
+  Serial.println();
+  delay(10000);  
 }
 
 /*
@@ -87,22 +104,14 @@ void loop() {
  */
 float readBMP280temp(){
   float BMP280temp = 0;
-  Serial.print(F("/BMP280/ Temperature: "));
   BMP280temp = bme.readTemperature();
-  Serial.print(BMP280temp);
-  Serial.println(" *C");
-  Serial.println();
-  //delay(2000);
+  delay(200);
   return BMP280temp;
 }
 
 float readBMP280pres(){
   float BMP280pres = 0;
-  Serial.print(F("/BMP280/ Pressure: "));
   BMP280pres = bme.readPressure();
-  Serial.print(BMP280pres);
-  Serial.println(" Pa");
-  Serial.println();
   return BMP280pres;
 }
 
@@ -121,9 +130,6 @@ float readDHT22hum(){
     Serial.println("Failed to read from DHT sensor!");
     return -1;
   }
-  Serial.print("/DHT22/ Humidity: ");
-  Serial.print(DHT22hum);
-  Serial.println();
   
   return DHT22hum;
 }
@@ -137,9 +143,6 @@ float readDHT22temp(){
     Serial.println("Failed to read from DHT sensor!");
     return -1;
   }
-  Serial.print("/DHT22/ Temperature: ");
-  Serial.print(DHT22temp);
-  Serial.println();
   
   return DHT22temp;
 }
@@ -248,6 +251,36 @@ int getTimeHours(){
   else
     Serial.print(F("INVALID"));
   return GPShh;
+}
+float getBatteryVoltage(){
+  int valueBattery = analogRead(A0);
+
+  return ((valueBattery*(5.0 / 1023.0))*(2.54+1));
+}
+int getMQ5data(){
+  int ad_value = 0;
+  ad_value = analogRead(MQ5_APIN);
+
+  return ad_value;
+}
+int getMQ135data(){
+  int ad_value = -1;
+  ad_value = analogRead(MQ135_APIN);
+
+  return ad_value;
+}
+float getWaterTemp(){
+  float value = -1;
+  sensors.requestTemperatures();
+  value = sensors.getTempCByIndex(0);
+
+  return value;
+}
+int getSoilMoisture(){
+  int value = -1;
+  value = analogRead(SOIL_PIN);
+
+  return value;
 }
 
 
