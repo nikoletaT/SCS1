@@ -12,3 +12,5 @@ The JSON that NodeMCU sends:
 - battery voltage
 - MQ5 sensor data
 - MQ135 sensor data
+- Water Temperature
+- Soil Humidity 
